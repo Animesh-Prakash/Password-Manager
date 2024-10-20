@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-green-50 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px];
+  }
+}
+
+@layer components {
+  .mycontainer {
+    @apply container px-40 py-16 mx-auto;
+
+    /* Set width to 935px when screen is 1000px or below */
+    @apply md:w-[935px]; /* Assuming you want this style for screens below 1000px */
+  }
+}
