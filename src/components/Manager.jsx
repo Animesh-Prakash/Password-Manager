@@ -14,16 +14,15 @@ const Manager = () => {
   const [passwordArray, setPasswordArray] = useState([]);
   const [showPassword, setShowPassword] = useState(false); // State to track password visibility
 
-  const getPasswords=async()=>{
-    let req=await fetch('http://localhost:3000/')
-    let passwords = await req.json()
- 
-      setPasswordArray(passwords);
-    console.log(passwords)
-  }
+  const getPasswords = async () => {
+    let req = await fetch('http://localhost:3000/');
+    let passwords = await req.json();
+    setPasswordArray(passwords); // Set passwords fetched from the server
+    console.log(passwords);
+  };
+
   useEffect(() => {
-  getPasswords()
-    
+    getPasswords(); // Fetch passwords when the component mounts
   }, []);
 
   // Toggle password visibility
@@ -34,18 +33,22 @@ const Manager = () => {
     }
   };
 
-  const savePassword = async() => {
-    if(form.site.length>3 && form.username.length>3 && form.password.length>3){
-      //If any such id exists in the db, delete it 
-       await fetch('http://localhost:3000/',{method: "DELETE", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:form.id})})
+  const savePassword = async () => {
+    if (form.site.length > 3 && form.username.length > 3 && form.password.length > 3) {
+      // Save the password to the server
+      const id = form.id || uuidv4();
+      const newPassword = { ...form, id };
 
-      setPasswordArray([...passwordArray, {...form, id: uuidv4()}]);
-    await fetch('http://localhost:3000/',{method: "POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({...form, id:uuidv4()})})
+      await fetch('http://localhost:3000/', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPassword)
+      });
 
-      // localStorage.setItem("passwords", JSON.stringify([...passwordArray, form]));
-      setform({ site: "", username: "", password: "" })
-      // console.log([...passwordArray, form]);
-      toast('Password Saved!',{
+      setPasswordArray([...passwordArray, newPassword]); // Update the local state with the new password
+
+      setform({ site: "", username: "", password: "" }); // Clear the form after saving
+      toast('Password Saved!', {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -54,23 +57,26 @@ const Manager = () => {
         draggable: true,
         progress: undefined,
         theme: "dark",
-  
-      })
-    }
-    else{
+      });
+    } else {
       toast("Error: Password is not saved!");
     }
   };
 
-  const deletePassword = async(id) => {
-    let c=confirm("Do you really want to delete password");
-    if(c){
-      setPasswordArray([...passwordArray, {...form, id: uuidv4()}]);
-      setPasswordArray(passwordArray.filter(item=>item.id!==id))
-      // localStorage.setItem("passwords", JSON.stringify(passwordArray.filter(item=>item.id!==id)));
-      let res= await fetch('http://localhost:3000/',{method: "DELETE", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id})})
+  const deletePassword = async (id) => {
+    let c = confirm("Do you really want to delete password?");
+    if (c) {
+      // Delete the password from the server
+      await fetch('http://localhost:3000/', {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
 
-      toast('Password Deleted!',{
+      // Update the local state to remove the deleted password
+      setPasswordArray(passwordArray.filter(item => item.id !== id));
+
+      toast('Password Deleted!', {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -79,18 +85,15 @@ const Manager = () => {
         draggable: true,
         progress: undefined,
         theme: "dark",
-
-      })
+      });
     }
-  
   };
 
   const editPassword = (id) => {
-    setform({...passwordArray.filter(i=>i.id===id)[0], id: id});
-     setPasswordArray(passwordArray.filter(item=>item.id!==id));
-    // localStorage.setItem("passwords", JSON.stringify([...passwordArray, {...form, id: uuidv4()}]));
-    // console.log([...passwordArray, form]);
-  };
+  const passwordToEdit = passwordArray.find(i => i.id === id);
+  setform(passwordToEdit); // Set form with the existing data to edit
+  setPasswordArray(passwordArray.filter(item => item.id !== id)); // Remove the password being edited from the list temporarily
+};
 
   const handleChange = (e) => {
     setform({ ...form, [e.target.name]: e.target.value });
@@ -98,9 +101,9 @@ const Manager = () => {
 
   return (
     <>
-    <ToastContainer />
+      <ToastContainer />
       <div className="absolute top-0 z-[-2] min-h-full w-screen rotate-180 transform ]"></div>
-      <div className=" p-3 md:mycontainer min-h-[80.7vh] ">
+      <div className="p-3 md:mycontainer min-h-[80.7vh]">
         <h1 className='text-4xl font-bold text-center'>
           <span className='text-green-700'> &lt;</span>
           <span>Pass</span>
@@ -124,51 +127,48 @@ const Manager = () => {
           </button>
         </div>
         <div className="passwords mx-2 mb-3">
-  <h2 className="font-bold text-xl py-4">Your Passwords</h2>
-
-  {passwordArray.length === 0 && <div>No Password to show</div>}
-
-  {passwordArray.length !== 0 && (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-green-100 rounded-md ">
-        <thead className="bg-green-800 text-white">
-          <tr>
-            <th className="py-2 px-4 text-left">Site</th>
-            <th className="py-2 px-4 text-left">Username</th>
-            <th className="py-2 px-4 text-left">Password</th>
-            <th className="py-2 px-4 text-left">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {passwordArray.map((item, index) => (
-            <tr key={index} className="border-b">
-              <td className="py-2 px-4 border border-white text-left break-words max-w-[150px]">
-                <a href={item.site} target="_blank" rel="noopener noreferrer">{item.site}</a>
-              </td>
-              <td className="py-2 px-4 border border-white text-left break-words max-w-[150px]">
-                {item.username}
-              </td>
-              <td className="py-2 px-4 border border-white text-left break-words max-w-[150px]">
-                {item.password}
-              </td>
-              <td className="py-2 px-4 border border-white text-left">
-                <div className="flex justify-center space-x-3">
-                  <span className="cursor-pointer" onClick={() => editPassword(item.id)}>
-                    <img src={Edit} className="w-7" alt="Edit" />
-                  </span>
-                  <span className="cursor-pointer" onClick={() => deletePassword(item.id)}>
-                    <img src={Delete} className="w-7" alt="Delete" />
-                  </span>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )}
-</div>
-
+          <h2 className="font-bold text-xl py-4">Your Passwords</h2>
+          {passwordArray.length === 0 && <div>No Password to show</div>}
+          {passwordArray.length !== 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-green-100 rounded-md">
+                <thead className="bg-green-800 text-white">
+                  <tr>
+                    <th className="py-2 px-4 text-left">Site</th>
+                    <th className="py-2 px-4 text-left">Username</th>
+                    <th className="py-2 px-4 text-left">Password</th>
+                    <th className="py-2 px-4 text-left">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {passwordArray.map((item) => (
+                    <tr key={item.id} className="border-b">
+                      <td className="py-2 px-4 border border-white text-left break-words max-w-[150px]">
+                        <a href={item.site} target="_blank" rel="noopener noreferrer">{item.site}</a>
+                      </td>
+                      <td className="py-2 px-4 border border-white text-left break-words max-w-[150px]">
+                        {item.username}
+                      </td>
+                      <td className="py-2 px-4 border border-white text-left break-words max-w-[150px]">
+                        {item.password}
+                      </td>
+                      <td className="py-2 px-4 border border-white text-left">
+                        <div className="flex justify-center space-x-3">
+                          <span className="cursor-pointer" onClick={() => editPassword(item.id)}>
+                            <img src={Edit} className="w-7" alt="Edit" />
+                          </span>
+                          <span className="cursor-pointer" onClick={() => deletePassword(item.id)}>
+                            <img src={Delete} className="w-7" alt="Delete" />
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
